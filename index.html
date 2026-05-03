@@ -601,6 +601,10 @@ function render() {
   });
 
   container.innerHTML = html;
+  document.querySelectorAll('.note-input').forEach(ta => {
+    ta.addEventListener('input', () => saveNote(ta.dataset.key, ta.dataset.title));
+    ta.addEventListener('paste', () => setTimeout(() => saveNote(ta.dataset.key, ta.dataset.title), 100));
+  });
 
   document.getElementById('stat-done').textContent = totalDone;
   document.getElementById('stat-left').textContent = 20 - totalDone;
