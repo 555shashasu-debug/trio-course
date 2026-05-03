@@ -591,7 +591,7 @@ function render() {
           <span>${hasNote ? '📝' : '+'}</span> ${hasNote ? '查看筆記' : '新增筆記'}
         </button>
         <div class="note-box" id="notebox_${key}">
-          <textarea class="note-input" id="noteinput_${key}" placeholder="在這裡記下重點、心得、或待複習的地方..." oninput="saveNote('${key}', ${JSON.stringify(l.title)})">${progress[noteKey] || ''}</textarea>
+          <textarea class="note-input" id="noteinput_${key}" placeholder="在這裡記下重點、心得、或待複習的地方..." oninput="saveNote('${key}', ${JSON.stringify(l.title)})" onpaste="setTimeout(()=>saveNote('${key}', ${JSON.stringify(l.title)}),100)" onchange="saveNote('${key}', ${JSON.stringify(l.title)})">${progress[noteKey] || ''}</textarea>
           <div class="note-saved" id="notesaved_${key}">已儲存至 Google Sheet ✓</div>
         </div>
       </div>`;
