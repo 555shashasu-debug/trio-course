@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TRIO 業務實戰課表 — S</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f0e; --surface: #1a1a18; --surface2: #222220;
+  --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.15);
+  --text: #e8e6df; --muted: #888880; --teal: #1D9E75;
+  --teal-light: #5DCAA5; --blue: #378ADD; --amber: #EF9F27;
+  --red: #E24B4A; --accent: #5DCAA5;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'Noto Sans TC',sans-serif; font-size:17px; line-height:1.75; min-height:100vh; }
+header { border-bottom:1px solid var(--border); padding:1.5rem 2rem; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; background:var(--bg); z-index:100; }
+.logo { font-family:'DM Mono',monospace; font-size:13px; color:var(--accent); letter-spacing:0.05em; }
+.header-right { display:flex; align-items:center; gap:1rem; }
+.progress-summary { font-family:'DM Mono',monospace; font-size:12px; color:var(--muted); }
+.progress-summary span { color:var(--accent); }
+#sync-status { font-size:12px; color:var(--muted); font-family:'DM Mono',monospace; }
+.main { max-width:900px; margin:0 auto; padding:2rem; }
+.hero { margin-bottom:2.5rem; padding:2rem; background:var(--surface); border:1px solid var(--border); border-radius:12px; position:relative; overflow:hidden; }
+.hero::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--teal),var(--blue),var(--amber)); }
+.hero-title { font-size:22px; font-weight:700; margin-bottom:0.5rem; }
+.hero-sub { color:var(--muted); font-size:13px; margin-bottom:1.5rem; }
+.stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; }
+.stat { background:var(--surface2); border-radius:8px; padding:0.75rem 1rem; }
+.stat-label { font-size:13px; color:var(--muted); margin-bottom:4px; font-family:'DM Mono',monospace; }
+.stat-value { font-size:24px; font-weight:700; font-family:'DM Mono',monospace; }
+.stat-value.green { color:var(--teal-light); }
+.stat-value.amber { color:var(--amber); }
+.global-progress { margin-top:1rem; height:4px; background:var(--surface2); border-radius:2px; overflow:hidden; }
+.global-bar { height:100%; background:linear-gradient(90deg,var(--teal),var(--blue)); border-radius:2px; transition:width 0.4s ease; width:0%; }
+.weeks { display:flex; flex-direction:column; gap:1.5rem; }
+.week { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+.week-header { padding:1rem 1.5rem; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); cursor:pointer; user-select:none; }
+.week-header:hover { background:var(--surface2); }
+.week-left { display:flex; align-items:center; gap:12px; }
+.week-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.week-name { font-weight:500; font-size:17px; }
+.week-date { font-size:13px; color:var(--muted); font-family:'DM Mono',monospace; margin-top:2px; }
+.week-right { display:flex; align-items:center; gap:12px; }
+.week-badge { font-size:11px; padding:3px 10px; border-radius:20px; font-family:'DM Mono',monospace; }
+.week-progress-text { font-size:12px; color:var(--muted); font-family:'DM Mono',monospace; }
+.chevron { color:var(--muted); font-size:12px; transition:transform 0.2s; }
+.chevron.open { transform:rotate(180deg); }
+.week-bar { height:2px; }
+.lessons { display:none; }
+.lessons.open { display:block; }
+.lesson { display:flex; align-items:flex-start; gap:16px; padding:1rem 1.5rem; border-bottom:1px solid var(--border); }
+.lesson:hover { background:var(--surface2); }
+.lesson.done .lesson-title { text-decoration:line-through; opacity:0.5; }
+.cb { width:20px; height:20px; min-width:20px; border:1px solid var(--border2); border-radius:4px; margin-top:2px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.15s; flex-shrink:0; }
+.cb:hover { border-color:var(--accent); }
+.cb.checked { background:var(--teal); border-color:var(--teal); color:white; font-size:12px; }
+.lesson-meta { flex:1; }
+.day-label { font-size:13px; color:var(--muted); font-family:'DM Mono',monospace; margin-bottom:6px; }
+.lesson-title { font-size:17px; font-weight:500; line-height:1.5; }
+.lesson-tag { font-size:14px; color:var(--muted); margin-top:6px; }
+.start-btn { background:transparent; border:1px solid var(--border2); color:var(--text); padding:8px 18px; border-radius:6px; font-size:14px; cursor:pointer; white-space:nowrap; font-family:'Noto Sans TC',sans-serif; transition:all 0.15s; flex-shrink:0; }
+.start-btn:hover { border-color:var(--accent); color:var(--accent); }
+.note-area { padding:0.75rem 1.5rem 1rem; border-bottom:1px solid var(--border); background:var(--surface); }
+.note-input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:'Noto Sans TC',sans-serif; font-size:16px; padding:14px 16px; resize:vertical; min-height:90px; line-height:1.8; outline:none; transition:border-color 0.15s; display:block; }
+.note-input:focus { border-color:var(--accent); }
+.note-input::placeholder { color:var(--muted); }
+.note-status { font-size:12px; font-family:'DM Mono',monospace; margin-top:6px; height:18px; color:var(--teal-light); }
+.vacation-banner { background:var(--surface2); border:1px dashed var(--border2); border-radius:8px; padding:1rem 1.5rem; margin:1rem 1.5rem; text-align:center; color:var(--muted); font-size:14px; }
+.action-btn { background:transparent; border:1px solid var(--border2); color:var(--text); padding:6px 14px; border-radius:6px; font-size:13px; cursor:pointer; font-family:'DM Mono',monospace; transition:all 0.15s; }
+.action-btn:hover { border-color:var(--accent); color:var(--accent); }
+.action-btn.danger:hover { border-color:var(--red); color:var(--red); }
+.claude-link { display:inline-flex; align-items:center; gap:6px; background:var(--teal); color:white; padding:8px 18px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:500; }
+footer { text-align:center; padding:2rem; color:var(--muted); font-size:12px; font-family:'DM Mono',monospace; border-top:1px solid var(--border); margin-top:3rem; }
+@media(max-width:600px){ .stats-row{grid-template-columns:repeat(2,1fr);} .main{padding:1rem;} header{padding:1rem;} .start-btn{display:none;} }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">TRIO // 業務實戰課表</div>
+  <div class="header-right">
+    <div class="progress-summary">完成 <span id="hdr-done">0</span> / 20 堂</div>
+    <span id="sync-status"></span>
+    <button class="action-btn" onclick="exportNotes()">匯出筆記 →</button>
+    <button class="action-btn danger" onclick="resetAll()">重置</button>
+  </div>
+</header>
+<div class="main">
+  <div class="hero">
+    <div class="hero-title">S 的 20 天衝刺計畫</div>
+    <div class="hero-sub">2026/5/3 → 2026/6/1　每天 1–2 小時　目標：進公司即戰力</div>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-label">完成堂數</div><div class="stat-value green" id="stat-done">0</div></div>
+      <div class="stat"><div class="stat-label">剩餘堂數</div><div class="stat-value" id="stat-left">20</div></div>
+      <div class="stat"><div class="stat-label">上班倒數</div><div class="stat-value amber" id="stat-days">—</div></div>
+      <div class="stat"><div class="stat-label">越南出發</div><div class="stat-value" style="font-size:14px;padding-top:6px;color:var(--muted);">5/19–5/23</div></div>
+    </div>
+    <div class="global-progress"><div class="global-bar" id="global-bar"></div></div>
+  </div>
+  <div class="weeks" id="weeks-container"></div>
+  <div style="text-align:center;margin-top:2rem;padding:1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;">
+    <div style="font-size:14px;color:var(--muted);margin-bottom:1rem;">複製指令後貼到 Claude 開始學習</div>
+    <a href="https://claude.ai" target="_blank" class="claude-link">前往 Claude.ai ↗</a>
+  </div>
+</div>
+<footer>made for S · TRIO Industries · 2026</footer>
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyiOGvrBRvIPf6DmZbvJnY1crsUH0vi47mAqDzUfoNASHutpjAM_LTxSKHeRI3VBnLVZw/exec';
+const STORAGE_KEY = 'trio_v3';
+
+const WEEKS = [
+  { id:'w1', name:'第1週：數字＋心態', sub:'5/5 – 5/11', color:'#1D9E75', badge:'基本功', badgeStyle:'background:#0F6E5620;color:#5DCAA5;border:1px solid #1D9E7540;',
+    lessons:[
+      {day:'D1',date:'5/5',title:'毛利率、管銷、底價：三個數字讀懂一張報價單',tag:'費曼練習：用自己的話解釋給朋友聽',prompt:'請用費曼技巧教我：毛利率、管銷費用、底價這三個數字的關係，以及如何從一張報價單讀懂它們。我是塑膠射出廠的業務新人。'},
+      {day:'D2',date:'5/6',title:'報價單結構拆解：成本＋加工＋利潤＋MOQ怎麼連動',tag:'實作：自己填一張空白報價單',prompt:'教我報價單的完整結構：成本、加工費、利潤、MOQ之間如何連動？並給我一張空白報價單框架讓我練習填寫。背景：我在泰國台商塑膠射出廠做業務。'},
+      {day:'D3',date:'5/7',title:'B2B客戶心理：他為什麼換供應商？他怕什麼？',tag:'主動回想：列出客戶3大痛點',prompt:'用主動回想技巧教我B2B客戶心理：一個採購為什麼會換供應商？他最怕什麼？最在意什麼？以塑膠零件採購為例，幫我整理出3大痛點並教我怎麼應對。'},
+      {day:'D4',date:'5/8',title:'第一封重啟信怎麼寫：斷聯客戶的破冰邏輯',tag:'實作：寫出一封模板',prompt:'教我寫給斷聯舊客戶的重啟信。背景：我是新進業務，接手舊客戶關係修復。客戶可能因為品質、價格、服務等原因流失。幫我整理破冰邏輯，並寫出一封英文模板。'},
+      {day:'D5',date:'5/9',title:'週複習：費曼測試，解釋這週學的給我聽',tag:'主動回想：不看筆記直接說',prompt:'請考我第一週的所有內容（毛利率、報價單結構、B2B客戶心理、重啟信）。用費曼測試方式：先讓我解釋，你再指出哪裡不清楚或不正確。開始考試。',test:true}
+    ]
+  },
+  { id:'w2', name:'第2週：談判實戰', sub:'5/12 – 5/18', color:'#378ADD', badge:'核心技能', badgeStyle:'background:#185FA520;color:#85B7EB;border:1px solid #378ADD40;',
+    lessons:[
+      {day:'D6',date:'5/12',title:'談判四步：錨定→讓步→條件交換→收尾',tag:'情境模擬：客戶要求降價5%',prompt:'教我B2B談判四步驟：錨定、讓步、條件交換、收尾。教完後模擬一個情境：我是塑膠射出廠業務，客戶要求降價5%，我的毛利率目前17%，管銷18%。你扮演客戶，我來談判。'},
+      {day:'D7',date:'5/13',title:'量、價、期：三個變數怎麼互換？',tag:'實作：設計三種談判方案',prompt:'教我「量、價、期」三個談判變數如何互換。例如：客戶殺價→要量補毛利；客戶急單→加價換交期。教完後給我一個情境讓我設計三種不同方案。'},
+      {day:'D8',date:'5/14',title:'客訴現場處理SOP：道歉→釐清→承諾→追蹤',tag:'情境演練：品質客訴',prompt:'教我客訴處理的完整SOP：道歉、釐清事實、承諾解決、後續追蹤。重點是如何在不傷害關係的前提下保護公司立場。教完後模擬一個品質客訴情境讓我練習。'},
+      {day:'D9',date:'5/15',title:'物流當籌碼：怎麼把服務打包成價值？',tag:'練習：設計一個物流加值方案',prompt:'我們公司有自己的物流。教我如何把物流服務包裝成談判籌碼，而不是只是報一個物流費用。如何讓客戶覺得這是附加價值？幫我設計一個可以跟客戶提案的物流加值方案。'},
+      {day:'D10',date:'5/16',title:'週複習：角色扮演，我當客戶來刁難你',tag:'對話模擬實戰',prompt:'第二週壓力測試開始。你扮演一個很難搞的採購主管，我來應對。情境：我打電話給你，你是我們的舊客戶，已經一年沒下單，我想重啟合作。你要在對話中測試我的談判、客訴處理、報價能力。開始。',test:true}
+    ]
+  },
+  { id:'w3', name:'第3週：客戶關係修復', sub:'5/24 – 5/30（越南回來後補）', color:'#EF9F27', badge:'主戰場', badgeStyle:'background:#BA751720;color:#FAC775;border:1px solid #EF9F2740;',
+    vacation:{note:'越南旅遊 5/19–5/23，好好陪媽媽'},
+    lessons:[
+      {day:'D11',date:'5/24',title:'客戶流失原因分類：價格／品質／服務／關係各怎麼修？',tag:'建立你的應對話術庫',prompt:'教我系統性分析客戶流失原因：價格問題、品質問題、服務問題、關係問題，各自的修復邏輯和話術有什麼不同？幫我建立一個應對話術庫框架。'},
+      {day:'D12',date:'5/25',title:'第一通電話怎麼打：30秒開場＋目的＋收尾',tag:'實作：寫出你的開場白腳本',prompt:'教我打給舊客戶的第一通電話結構：30秒開場白、說明目的、自然收尾約下一步。背景：我是新業務接手舊客戶，客戶可能根本不記得我們。幫我寫出中文和英文各一份腳本。'},
+      {day:'D13',date:'5/26',title:'I人業務的優勢：傾聽＋記憶＋精準回應',tag:'INFJ特質如何變成談判武器',prompt:'我是INFJ的I人業務。教我如何把I人特質（深度傾聽、觀察、長期記憶）轉化為業務優勢，而不是硬裝成外向業務。給我具體的話術和行為策略。'},
+      {day:'D14',date:'5/27',title:'英文商業郵件：報價、跟進、客訴三種模板',tag:'實作：各寫一封',prompt:'幫我建立三種英文商業郵件模板：1)初次報價 2)跟進未回覆的客戶 3)處理客訴。每封都要有主旨、開場、主體、收尾的完整結構，語氣專業但不死板。'},
+      {day:'D15',date:'5/28',title:'週複習：模擬修復一個虛構的斷聯客戶全流程',tag:'從第一封信到拿到訂單',prompt:'完整模擬修復斷聯客戶的全流程。你給我一個虛構客戶背景（斷聯原因、規模、採購習慣），我來執行：寫重啟信、打電話開場、處理異議、報價談判、拿到訂單。你扮演客戶，我執行每一步。',test:true}
+    ]
+  },
+  { id:'w4', name:'第4週：沙盤推演', sub:'5/29 – 5/31 + 上班後補', color:'#888780', badge:'壓力測試', badgeStyle:'background:#5F5E5A20;color:#B4B2A9;border:1px solid #88878040;',
+    lessons:[
+      {day:'D16',date:'5/29',title:'競爭對手分析：如果我是對手怎麼打你（延伸）',tag:'建立你的防禦話術',prompt:'延續之前分析：假設我是TRIO的競爭對手，我要怎麼打TRIO（有模具+射出+物流的台商廠）？分析完後，幫我建立TRIO的防禦話術，當客戶說「別家更便宜」時怎麼回應。'},
+      {day:'D17',date:'5/30',title:'產能×訂單×報價：整合計算實戰題',tag:'給你一個情境，你來算出最佳方案',prompt:'給我一道整合計算題，包含：產能限制、現有訂單、新客戶報價決策。我要從數字算出：能不能接、底價多少、如何跟老闆報告。你出題，我來算，算完你評估對不對。'},
+      {day:'D18',date:'5/31',title:'進公司第一週腳本：每天要做什麼、要問誰',tag:'對應入職提問清單',prompt:'幫我設計進入TRIO第一週的每日行動腳本：Week 1 Day 1-5各自的優先任務、要找誰談、要取得什麼資訊。結合之前整理的入職提問清單，給我一個清晰的行動計畫。'},
+      {day:'D19',date:'6/7',title:'最終壓力測試：全英文難搞客戶談判',tag:'30分鐘不間斷情境模擬',prompt:'Final pressure test. You are a difficult procurement manager from a European company. I am the new BD from TRIO Industries (Thai plastic injection molder). You have not ordered from us for 2 years due to quality issues. I will call you to restart the relationship. Start the conversation now. Be tough.',test:true},
+      {day:'D20',date:'6/8',title:'總複習：費曼測試所有20天內容，找出知識漏洞',tag:'準備出發',prompt:'對我做20天課程的全面費曼測試。先讓我自己解說：1)報價數字邏輯 2)談判策略 3)客戶修復流程 4)競爭應對。你記錄我說不清楚的地方，最後列出我的知識漏洞清單。開始。',test:true}
+    ]
+  }
+];
+
+let progress = {};
+try { progress = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch(e) {}
+
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }
+
+function countdownDays() {
+  const diff = Math.ceil((new Date('2026-06-01') - new Date()) / 86400000);
+  return diff > 0 ? diff + ' 天' : '出發了！';
+}
+
+function copyPrompt(prompt, btn) {
+  navigator.clipboard.writeText(prompt).then(() => {
+    const t = btn.textContent;
+    btn.textContent = '已複製 ✓';
+    btn.style.color = '#5DCAA5';
+    setTimeout(() => { btn.textContent = t; btn.style.color = ''; }, 2000);
+  });
+}
+
+function toggleLesson(weekId, day) {
+  const k = weekId + '_' + day;
+  progress[k] = !progress[k];
+  save();
+  render();
+}
+
+function toggleWeek(id) {
+  const el = document.getElementById('L_' + id);
+  const ch = document.getElementById('C_' + id);
+  el.classList.toggle('open');
+  ch.classList.toggle('open');
+}
+
+function resetAll() {
+  if (confirm('確定要重置所有進度嗎？')) { progress = {}; save(); render(); }
+}
+
+function updateStats() {
+  let done = 0;
+  WEEKS.forEach(w => w.lessons.forEach(l => { if (progress[w.id+'_'+l.day]) done++; }));
+  document.getElementById('stat-done').textContent = done;
+  document.getElementById('stat-left').textContent = 20 - done;
+  document.getElementById('stat-days').textContent = countdownDays();
+  document.getElementById('hdr-done').textContent = done;
+  document.getElementById('global-bar').style.width = (done / 20 * 100) + '%';
+}
+
+let noteTimers = {};
+
+function handleNoteInput(key, weekId, day) {
+  const ta = document.getElementById('NI_' + key);
+  if (!ta) return;
+  const val = ta.value;
+  progress['note_' + key] = val;
+  save();
+  clearTimeout(noteTimers[key]);
+  noteTimers[key] = setTimeout(() => {
+    const st = document.getElementById('NS_' + key);
+    if (st) st.textContent = '儲存中...';
+    const url = SCRIPT_URL + '?action=save&key=' + encodeURIComponent(key) + '&note=' + encodeURIComponent(val) + '&title=' + encodeURIComponent(day);
+    fetch(url)
+    .then(() => { if (st) { st.textContent = '已儲存至 Google Sheet ✓'; setTimeout(() => { st.textContent=''; }, 3000); } })
+    .catch(() => { if (st) { st.textContent = '已存本機'; setTimeout(() => { st.textContent=''; }, 2000); } });
+  }, 1000);
+}
+
+function exportNotes() {
+  const st = document.getElementById('sync-status');
+  const promises = [];
+  let count = 0;
+  WEEKS.forEach(w => {
+    w.lessons.forEach(l => {
+      const note = progress['note_' + w.id + '_' + l.day];
+      if (note && note.trim()) {
+        count++;
+        const key = w.id + '_' + l.day;
+        const url = SCRIPT_URL + '?action=save&key=' + encodeURIComponent(key) + '&note=' + encodeURIComponent(note.trim()) + '&title=' + encodeURIComponent(l.day);
+        promises.push(fetch(url));
+      }
+    });
+  });
+  if (count === 0) { alert('還沒有任何筆記！'); return; }
+  st.textContent = '匯出中...';
+  Promise.all(promises)
+    .then(() => { st.textContent = '已匯出 ' + count + ' 筆 ✓'; setTimeout(() => st.textContent='', 4000); alert('完成！去 Google Sheet 看「學習筆記」分頁。'); })
+    .catch(() => { st.textContent = '失敗，請重試'; setTimeout(() => st.textContent='', 3000); });
+}
+
+function syncFromSheet() {
+  const st = document.getElementById('sync-status');
+  st.textContent = '同步中...';
+  fetch(SCRIPT_URL)
+    .then(r => r.json())
+    .then(data => {
+      Object.keys(data).forEach(k => { if (data[k]) progress['note_' + k] = data[k]; });
+      save();
+      st.textContent = '已同步 ✓';
+      setTimeout(() => st.textContent = '', 2000);
+      render();
+    })
+    .catch(() => { st.textContent = ''; });
+}
+
+function render() {
+  const container = document.getElementById('weeks-container');
+  let html = '';
+  WEEKS.forEach(w => {
+    const done = w.lessons.filter(l => progress[w.id+'_'+l.day]).length;
+    html += '<div class="week">';
+    html += '<div class="week-bar" style="background:' + w.color + ';opacity:0.7;"></div>';
+    html += '<div class="week-header" onclick="toggleWeek(\'' + w.id + '\')">';
+    html += '<div class="week-left"><div class="week-dot" style="background:' + w.color + ';"></div>';
+    html += '<div><div class="week-name">' + w.name + '</div><div class="week-date">' + w.sub + '</div></div></div>';
+    html += '<div class="week-right"><span class="week-badge" style="' + w.badgeStyle + '">' + w.badge + '</span>';
+    html += '<span class="week-progress-text">' + done + '/' + w.lessons.length + '</span>';
+    html += '<span class="chevron open" id="C_' + w.id + '">▾</span></div></div>';
+    html += '<div class="lessons open" id="L_' + w.id + '">';
+    if (w.vacation) html += '<div class="vacation-banner">✈ ' + w.vacation.note + '</div>';
+    w.lessons.forEach(l => {
+      const key = w.id + '_' + l.day;
+      const isDone = !!progress[key];
+      const note = progress['note_' + key] || '';
+      html += '<div class="lesson' + (isDone ? ' done' : '') + '">';
+      html += '<div class="cb' + (isDone ? ' checked' : '') + '" onclick="toggleLesson(\'' + w.id + '\',\'' + l.day + '\')">' + (isDone ? '✓' : '') + '</div>';
+      html += '<div class="lesson-meta">';
+      html += '<div class="day-label">' + l.day + ' · ' + l.date + '</div>';
+      html += '<div class="lesson-title">' + l.title + '</div>';
+      html += '<div class="lesson-tag">' + l.tag + '</div>';
+      html += '</div>';
+      html += '<button class="start-btn" onclick="copyPrompt(' + JSON.stringify(l.prompt) + ', this)">' + (l.test ? '開始測試 ↗' : '複製指令 ↗') + '</button>';
+      html += '</div>';
+      html += '<div class="note-area">';
+      html += '<textarea class="note-input" id="NI_' + key + '" placeholder="在這裡記下重點、心得..." oninput="handleNoteInput(\'' + key + '\',\'' + w.id + '\',\'' + l.day + '\')">' + note.replace(/</g,'&lt;') + '</textarea>';
+      html += '<div class="note-status" id="NS_' + key + '"></div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+  });
+  container.innerHTML = html;
+  updateStats();
+}
+
+render();
+syncFromSheet();
+</script>
+</body>
+</html>
