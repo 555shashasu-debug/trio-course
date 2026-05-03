@@ -649,13 +649,9 @@ function exportNotes() {
 let noteTimers = {};
 
 function toggleNote(key) {
-  const box = document.getElementById('notebox_' + key);
-  if (!box) return;
-  const isOpen = box.classList.contains('open');
-  box.classList.toggle('open');
-  if (!isOpen) { setTimeout(() => { const ta = document.getElementById('noteinput_' + key); if(ta) ta.focus(); }, 50); }
+  const ta = document.getElementById('noteinput_' + key);
+  if (ta) ta.focus();
 }
-
 function saveNote(key, title) {
   const ta = document.getElementById('noteinput_' + key);
   if (!ta) return;
